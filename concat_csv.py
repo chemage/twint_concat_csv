@@ -1,28 +1,32 @@
-import os, csv, datetime, itertools
+import os, csv, argparse, itertools
 
-src_pattern = "TWINT_association"
-src_dir = "P:\Documents\Assoc\PrendsMoiSec\Twint\decomptes"
-src_encoding = 'utf-8-sig'
-dst_filename = f"TWINT_{datetime.datetime.now().year}.csv"
-csv_sep = ';'
-skip_lines = 3
+# command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-i', '--input-files', type=str, nargs='*', required=True, help="List of input CSV files.")
+parser.add_argument('-e', '--input-encoding', type=str, default='utf-8-sig', help="Encoding of the input files (default: utf-8-sig).")
+parser.add_argument('-d', '--input-delimiter', type=str, default=';', help="Delimiter of the input files (default: ';').")
+parser.add_argument('-s', '--skip-lines', type=int, default=3, help="Number of lines to skip in input files (default: 3).")
+parser.add_argument('-x', '--export-file', type=str, required=True, help="Export filename.")
+# parser.add_argument('-E', '--export-encoding', type=str, default='utf-8', help="Encoding of the export files (default: utf-8).")
+args = parser.parse_args()
 
-# read source files
-src_files = []
-for (dirpath, dirnames, filenames) in os.walk(src_dir):
-	for filename in filenames:
-		if filename.startswith(src_pattern) and filename.endswith('.csv'):
-			src_files.append(filename)
+# use command line arguments
+src_files = args.input_files
+src_encoding = args.input_encoding
+dst_filename = args.export_file
+csv_sep = args.input_delimiter
+skip_lines = args.skip_lines
+
+print(src_files)
 
 # get headers from first file
-with open(os.path.join(src_dir, src_files[0]), encoding=src_encoding) as src_csv:
+with open(src_files[0], encoding=src_encoding) as src_csv:
 	count = 0
 	for row in src_csv.readlines():
 		if count == skip_lines:
 			csv_headers = row.replace(src_csv.newlines, '').split(csv_sep)
 			csv_headers = [header.replace('"', '') for header in csv_headers]
 		count += 1
-print("CSV headers: " + str(csv_headers))
 
 # open destination csv
 with open(os.path.join(src_dir, dst_filename), 'w', newline='') as dst_file:
@@ -39,11 +43,6 @@ with open(os.path.join(src_dir, dst_filename), 'w', newline='') as dst_file:
 			# copy to new file
 			csv_reader = csv.DictReader(src_csv, delimiter=csv_sep)
 			for row in csv_reader:
-				print(row)
 				csv_writer.writerow(row)
 
-# write destination file
-# csv_headers = csv_data[0].keys()
-# 	csv_writer.fieldnames = csv_headers
-# 	csv_writer.writeheader()
-# 	csv_writer.writerows(csv_data)
+print("Script execution completed.")
