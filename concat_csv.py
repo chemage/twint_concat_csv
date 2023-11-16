@@ -1,4 +1,4 @@
-import os, csv, argparse, itertools, glob
+import csv, argparse, itertools, glob
 
 # expand filenames (necessary on Windows as wildcards are not interpreted)
 def expand_filenames(files:[str]):
@@ -18,14 +18,15 @@ parser.add_argument('-e', '--input-encoding', type=str, default='utf-8-sig', hel
 parser.add_argument('-d', '--input-delimiter', type=str, default=';', help="Delimiter of the input files (default: ';').")
 parser.add_argument('-s', '--skip-lines', type=int, default=3, help="Number of lines to skip in input files (default: 3).")
 parser.add_argument('-x', '--export-file', type=str, required=True, help="Export filename.")
-# parser.add_argument('-E', '--export-encoding', type=str, default='utf-8', help="Encoding of the export files (default: utf-8).")
+parser.add_argument('-D', '--export-delimiter', type=str, default=';', help="Delimiter of the export file (default: ';').")
 args = parser.parse_args()
 
 # use command line arguments
 src_files = expand_filenames(args.input_files)
 src_encoding = args.input_encoding
 dst_filename = args.export_file
-csv_sep = args.input_delimiter
+csv_import_delim = args.input_delimiter
+csv_export_delim = args.export_delimiter
 skip_lines = args.skip_lines
 
 # get headers from first file
@@ -34,7 +35,7 @@ try:
 		count = 0
 		for row in src_csv.readlines():
 			if count == skip_lines:
-				csv_headers = row.replace(src_csv.newlines, '').split(csv_sep)
+				csv_headers = row.replace(src_csv.newlines, '').split(csv_import_delim)
 				csv_headers = [header.replace('"', '') for header in csv_headers]
 			count += 1
 except Exception as e:
@@ -46,7 +47,7 @@ if csv_headers is not None:
 	try:
 		with open(dst_filename, 'w', newline='') as dst_file:
 			# create csv writer and write header
-			csv_writer = csv.DictWriter(dst_file, fieldnames=csv_headers, dialect='excel')
+			csv_writer = csv.DictWriter(dst_file, fieldnames=csv_headers, dialect='excel', delimiter=csv_export_delim)
 			csv_writer.writeheader()
 
 			# read csv data
@@ -56,7 +57,7 @@ if csv_headers is not None:
 					src_csv = itertools.islice(src_csv, skip_lines, None)
 
 					# copy to new file
-					csv_reader = csv.DictReader(src_csv, delimiter=csv_sep)
+					csv_reader = csv.DictReader(src_csv, delimiter=csv_import_delim)
 					for row in csv_reader:
 						csv_writer.writerow(row)
 	except Exception as e:
